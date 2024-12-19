@@ -10,7 +10,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
-  const [playlists, setPlaylists] = useState([]); 
+  const [playlists, setPlaylists] = useState([]);
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -80,7 +80,7 @@ function App() {
         description: video.description,
         duration: video.duration_raw,
         views: video.views,
-        thumbnailUrl: video.snippet.thumbnails.url, // Add thumbnailUrl from response
+        thumbnailUrl: video.snippet.thumbnails.url,
       }));
 
       setVideoList(videos);
@@ -140,12 +140,43 @@ function App() {
       ));
     }
   };
+  
+  const handleDeleteVideo = async (playlistId, videoToDelete) => {
+    try {
+      const response = await fetch(`https://harbour.dev.is/api/playlists/${playlistId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: videoToDelete.title,
+          videos: [
+            {
+              videoId: videoToDelete.videoId,
+              title: videoToDelete.title,
+              thumbnailUrl: videoToDelete.thumbnailUrl,
+            },
+          ],
+        }),
+      });
 
-  const handleSelectVideoFromPlaylist = (video) => {
-    setSelectedVideo({
-      ...video,
-      id: video.videoId || video.id, // Ensure correct video ID format
-    });
+      if (response.ok) {
+        setPlaylists(
+          playlists.map((playlist) =>
+            playlist.id === playlistId
+              ? {
+                  ...playlist,
+                  videos: playlist.videos.filter((video) => video.videoId !== videoToDelete.videoId),
+                }
+              : playlist
+          )
+        );
+      } else {
+        console.error('Failed to delete the video from the playlist');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+    }
   };
 
   useEffect(() => {
@@ -177,12 +208,12 @@ function App() {
         </div>
       )}
 
-      <Playlist
-        playlists={playlists}
-        onSelectVideo={handleSelectVideoFromPlaylist}
-        onDeleteVideo={(id) => setPlaylists(playlists.filter((p) => p.id !== id))}
-        onAddToPlaylist={handleAddToPlaylist}
-      />
+    <Playlist
+      playlists={playlists}
+      onSelectVideo={setSelectedVideo}
+      onDeleteVideo={handleDeleteVideo} 
+      onAddToPlaylist={handleAddToPlaylist}
+    />
 
       <VideoList videos={videoList} onSelectVideo={setSelectedVideo} onAddToPlaylist={handleAddToPlaylist} />
     </div>

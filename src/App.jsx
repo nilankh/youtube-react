@@ -3,12 +3,14 @@ import SearchBar from './components/SearchBar';
 import VideoList from './components/VideoList';
 import VideoPlayer from './components/VideoPlayer';
 import VideoDetails from './components/VideoDetails'; 
+import Playlist from './components/Playlist';
 import { GlobalStyle } from './components/GlobalStyle';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
+  const [playlist, setPlaylist] = useState([]);
 
   // Function to fetch videos
   const searchVideos = async (query) => {
@@ -26,7 +28,7 @@ function App() {
         views: video.views,
       }));
 
-      setVideoList(videos); // Update video list without resetting selected video
+      setVideoList(videos);
     } catch (error) {
       console.error('Error fetching videos:', error);
     }
@@ -35,15 +37,27 @@ function App() {
   // Handle search input
   const handleSearch = (query) => {
     setSearchQuery(query);
-    searchVideos(query); // Perform the search
+    searchVideos(query);
+  };
+
+  // Add video to playlist
+  const addToPlaylist = (video) => {
+    if (!playlist.some((v) => v.id === video.id)) {
+      setPlaylist([...playlist, video]);
+    }
+  };
+
+  // Delete video from playlist
+  const deleteFromPlaylist = (videoId) => {
+    setPlaylist(playlist.filter((video) => video.id !== videoId));
   };
 
   return (
     <div>
       <GlobalStyle />
+      <h1>Harbour Tube</h1>
       <SearchBar query={searchQuery} onSearch={handleSearch} />
 
-      {/* Render the currently playing video */}
       {selectedVideo && (
         <div>
           <VideoPlayer video={selectedVideo} />
@@ -51,8 +65,13 @@ function App() {
         </div>
       )}
 
-      {/* Render video list regardless of whether a video is playing */}
-      <VideoList videos={videoList} onSelectVideo={setSelectedVideo} />
+      <Playlist
+        videos={playlist}
+        onSelectVideo={setSelectedVideo}
+        onDeleteVideo={deleteFromPlaylist}
+      />
+
+      <VideoList videos={videoList} onSelectVideo={setSelectedVideo} onAddToPlaylist={addToPlaylist} />
     </div>
   );
 }

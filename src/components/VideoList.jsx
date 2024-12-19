@@ -22,7 +22,20 @@ const VideoDetails = styled.div`
   color: #666;
 `;
 
-const VideoList = ({ videos, onSelectVideo }) => {
+const Button = styled.button`
+  margin-top: 5px;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
+
+const VideoList = ({ videos, onSelectVideo, onAddToPlaylist }) => {
   return (
     <div>
       {videos.map((video) => (
@@ -37,6 +50,13 @@ const VideoList = ({ videos, onSelectVideo }) => {
             <span>Views: {video.views}</span>
             <span>Duration: {video.duration}</span>
           </VideoDetails>
+          {/* Add to Playlist Button */}
+          <Button onClick={(e) => { 
+            e.stopPropagation(); // Prevent selecting the video
+            onAddToPlaylist(video); 
+          }}>
+            Add to Playlist
+          </Button>
         </VideoItem>
       ))}
     </div>

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
 import VideoList from './components/VideoList';
 import VideoPlayer from './components/VideoPlayer';
-import VideoDetails from './components/VideoDetails'; 
+import VideoDetails from './components/VideoDetails';
 import Playlist from './components/Playlist';
 import { GlobalStyle } from './components/GlobalStyle';
 
@@ -10,9 +10,63 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
-  const [playlist, setPlaylist] = useState([]);
+  const [playlists, setPlaylists] = useState([]); 
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const userId = 'nilank'; // Hardcoded userId
 
-  // Function to fetch videos
+  // Fetch playlists from the API
+  const fetchPlaylists = async () => {
+    try {
+      const response = await fetch(`https://harbour.dev.is/api/playlists?userId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data && Array.isArray(data.playlists)) {
+        setPlaylists(data.playlists);
+      } else {
+        console.error('Error: No playlists array found in the response', data);
+        setPlaylists([]);
+      }
+    } catch (error) {
+      console.error('Error fetching playlists:', error);
+      setPlaylists([]);
+    }
+  };
+
+  // Function to create a new playlist
+  const createPlaylist = async () => {
+    try {
+      const response = await fetch('https://harbour.dev.is/api/playlists/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newPlaylistName,
+          userId: userId,
+        }),
+      });
+
+      if (response.ok) {
+        fetchPlaylists();
+        setCreatingPlaylist(false);
+        setNewPlaylistName('');
+      } else {
+        console.error('Error creating playlist');
+      }
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+    }
+  };
+
+  // Fetch videos based on search query
   const searchVideos = async (query) => {
     try {
       const response = await fetch(`https://harbour.dev.is/api/search?q=${query}`);
@@ -26,6 +80,7 @@ function App() {
         description: video.description,
         duration: video.duration_raw,
         views: video.views,
+        thumbnailUrl: video.snippet.thumbnails.url, // Add thumbnailUrl from response
       }));
 
       setVideoList(videos);
@@ -34,23 +89,68 @@ function App() {
     }
   };
 
-  // Handle search input
   const handleSearch = (query) => {
     setSearchQuery(query);
     searchVideos(query);
   };
 
-  // Add video to playlist
-  const addToPlaylist = (video) => {
-    if (!playlist.some((v) => v.id === video.id)) {
-      setPlaylist([...playlist, video]);
+  const handleAddToPlaylist = async (video) => {
+    const thumbnailUrl = video.thumbnailUrl;
+
+    if (!selectedPlaylist) {
+      const playlistName = prompt('Enter playlist name or create a new one:', selectedPlaylist ? selectedPlaylist.name : '');
+      if (playlistName) {
+        const playlist = playlists.find((p) => p.name === playlistName);
+        if (playlist) {
+          setSelectedPlaylist(playlist);
+          setPlaylists(playlists.map((p) =>
+            p.name === playlistName ? { ...p, videos: [...p.videos, { ...video, thumbnailUrl }] } : p
+          ));
+        } else {
+          const newPlaylist = { name: playlistName, videos: [{ ...video, thumbnailUrl }] };
+          setPlaylists([...playlists, newPlaylist]);
+          setSelectedPlaylist(newPlaylist);
+        }
+
+        const response = await fetch('https://harbour.dev.is/api/playlists', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: playlistName,
+            videos: [
+              {
+                videoId: video.id,
+                title: video.title,
+                thumbnailUrl: video.thumbnailUrl,
+              },
+            ],
+            userId: userId,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to add video to the playlist');
+        }
+      }
+    } else {
+      setPlaylists(playlists.map((p) =>
+        p.name === selectedPlaylist.name ? { ...p, videos: [...p.videos, { ...video, thumbnailUrl }] } : p
+      ));
     }
   };
 
-  // Delete video from playlist
-  const deleteFromPlaylist = (videoId) => {
-    setPlaylist(playlist.filter((video) => video.id !== videoId));
+  const handleSelectVideoFromPlaylist = (video) => {
+    setSelectedVideo({
+      ...video,
+      id: video.videoId || video.id, // Ensure correct video ID format
+    });
   };
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
 
   return (
     <div>
@@ -65,13 +165,26 @@ function App() {
         </div>
       )}
 
+      {creatingPlaylist && (
+        <div>
+          <input
+            type="text"
+            placeholder="Enter Playlist Name"
+            value={newPlaylistName}
+            onChange={(e) => setNewPlaylistName(e.target.value)}
+          />
+          <button onClick={createPlaylist}>Create Playlist</button>
+        </div>
+      )}
+
       <Playlist
-        videos={playlist}
-        onSelectVideo={setSelectedVideo}
-        onDeleteVideo={deleteFromPlaylist}
+        playlists={playlists}
+        onSelectVideo={handleSelectVideoFromPlaylist}
+        onDeleteVideo={(id) => setPlaylists(playlists.filter((p) => p.id !== id))}
+        onAddToPlaylist={handleAddToPlaylist}
       />
 
-      <VideoList videos={videoList} onSelectVideo={setSelectedVideo} onAddToPlaylist={addToPlaylist} />
+      <VideoList videos={videoList} onSelectVideo={setSelectedVideo} onAddToPlaylist={handleAddToPlaylist} />
     </div>
   );
 }

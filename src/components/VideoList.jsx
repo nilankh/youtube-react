@@ -50,9 +50,8 @@ const VideoList = ({ videos, onSelectVideo, onAddToPlaylist }) => {
             <span>Views: {video.views}</span>
             <span>Duration: {video.duration}</span>
           </VideoDetails>
-          {/* Add to Playlist Button */}
           <Button onClick={(e) => { 
-            e.stopPropagation(); // Prevent selecting the video
+            e.stopPropagation(); 
             onAddToPlaylist(video); 
           }}>
             Add to Playlist

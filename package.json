@@ -2,6 +2,7 @@
   "name": "youtube-react",
   "private": true,
   "version": "0.0.0",
+  "proxy": "https://harbour.dev.is",
   "type": "module",
   "scripts": {
     "dev": "vite",

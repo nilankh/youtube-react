@@ -41,22 +41,27 @@ const DeleteButton = styled.button`
   }
 `;
 
-const Playlist = ({ videos, onSelectVideo, onDeleteVideo }) => {
-  if (videos.length === 0) {
-    return <PlaylistContainer>No videos in the playlist</PlaylistContainer>;
-  }
-
+const Playlist = ({ playlists, onSelectVideo, onDeleteVideo }) => {
   return (
     <PlaylistContainer>
-      <h3>Playlist</h3>
-      {videos.map((video) => (
-        <PlaylistItem key={video.id}>
-          <VideoTitle onClick={() => onSelectVideo(video)}>
-            {video.title}
-          </VideoTitle>
-          <DeleteButton onClick={() => onDeleteVideo(video.id)}>Delete</DeleteButton>
-        </PlaylistItem>
-      ))}
+      <h3>Playlists</h3>
+      {playlists.length === 0 ? (
+        <div>No playlists available. Create one to start adding videos!</div>
+      ) : (
+        playlists.map((playlist) => (
+          <div key={playlist.id}>
+            <h4>{playlist.name}</h4>
+            {playlist.videos.map((video) => (
+              <PlaylistItem key={video.videoId}>
+                <VideoTitle onClick={() => onSelectVideo(video)}>{video.title}</VideoTitle>
+                <DeleteButton onClick={() => onDeleteVideo(playlist.id, video)}>
+                  Delete
+                </DeleteButton>
+              </PlaylistItem>
+            ))}
+          </div>
+        ))
+      )}
     </PlaylistContainer>
   );
 };

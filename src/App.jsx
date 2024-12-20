@@ -96,50 +96,91 @@ function App() {
 
   const handleAddToPlaylist = async (video) => {
     const thumbnailUrl = video.thumbnailUrl;
-
+  
     if (!selectedPlaylist) {
+      // If no playlist is selected, prompt the user to either choose an existing one or create a new one
       const playlistName = prompt('Enter playlist name or create a new one:', selectedPlaylist ? selectedPlaylist.name : '');
+  
       if (playlistName) {
         const playlist = playlists.find((p) => p.name === playlistName);
+  
         if (playlist) {
+          // If the playlist exists, update it with the new video
           setSelectedPlaylist(playlist);
           setPlaylists(playlists.map((p) =>
             p.name === playlistName ? { ...p, videos: [...p.videos, { ...video, thumbnailUrl }] } : p
           ));
+  
+          // Make the API call to add the video to the existing playlist
+          const response = await fetch(`https://harbour.dev.is/api/playlists/${playlist.id}/videos`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              videoId: video.id,
+              title: video.title,
+              thumbnailUrl: video.thumbnailUrl,
+            }),
+          });
+  
+          if (!response.ok) {
+            console.error('Failed to add video to the playlist');
+          }
         } else {
+          // If the playlist doesn't exist, create a new one
           const newPlaylist = { name: playlistName, videos: [{ ...video, thumbnailUrl }] };
           setPlaylists([...playlists, newPlaylist]);
           setSelectedPlaylist(newPlaylist);
-        }
-
-        const response = await fetch('https://harbour.dev.is/api/playlists', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: playlistName,
-            videos: [
-              {
-                videoId: video.id,
-                title: video.title,
-                thumbnailUrl: video.thumbnailUrl,
-              },
-            ],
-            userId: userId,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error('Failed to add video to the playlist');
+  
+          const response = await fetch('https://harbour.dev.is/api/playlists', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: playlistName,
+              videos: [
+                {
+                  videoId: video.id,
+                  title: video.title,
+                  thumbnailUrl: video.thumbnailUrl,
+                },
+              ],
+              userId: userId,
+            }),
+          });
+  
+          if (!response.ok) {
+            console.error('Failed to create new playlist');
+          }
         }
       }
     } else {
+      // If a playlist is already selected, update it with the new video
       setPlaylists(playlists.map((p) =>
         p.name === selectedPlaylist.name ? { ...p, videos: [...p.videos, { ...video, thumbnailUrl }] } : p
       ));
+  
+      // Call the API to add the video to the selected playlist
+      const response = await fetch(`https://harbour.dev.is/api/playlists/${selectedPlaylist.id}/videos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: video.id,
+          title: video.title,
+          thumbnailUrl: video.thumbnailUrl,
+        }),
+      });
+  
+      if (!response.ok) {
+        console.error('Failed to add video to the selected playlist');
+      }
     }
   };
+  
   
   const handleDeleteVideo = async (playlistId, videoToDelete) => {
     try {

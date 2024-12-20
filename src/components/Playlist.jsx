@@ -57,6 +57,7 @@ const Playlist = ({ playlists, onSelectVideo, onDeleteVideo, onAddToPlaylist }) 
             <h4>{playlist.name}</h4>
             {playlist.videos.map((video) => (
               <PlaylistItem key={video.videoId}>
+                <img src={video.thumbnailUrl} alt={video.title} style={{ width: '120px' }} />
                 <VideoTitle onClick={() => onSelectVideo(video)}>{video.title}</VideoTitle>
                 <DeleteButton onClick={() => handleDeleteVideo(playlist.id, video)}>
                   Delete

@@ -184,34 +184,39 @@ function App() {
   
   const handleDeleteVideo = async (playlistId, videoToDelete) => {
     try {
-      const response = await fetch(`https://harbour.dev.is/api/playlists/${playlistId}`, {
+      // Construct the API endpoint for deleting the video
+      const videoDeleteUrl = `https://harbour.dev.is/api/playlists/${playlistId}/videos/${videoToDelete.videoId}`;
+  
+      // Make the DELETE request to remove the video
+      const response = await fetch(videoDeleteUrl, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: videoToDelete.title,
-          videos: [
-            {
-              videoId: videoToDelete.videoId,
-              title: videoToDelete.title,
-              thumbnailUrl: videoToDelete.thumbnailUrl,
-            },
-          ],
-        }),
       });
-
+  
       if (response.ok) {
-        setPlaylists(
-          playlists.map((playlist) =>
+        // Update the local state to remove the deleted video
+        setPlaylists((prevPlaylists) => {
+          const updatedPlaylists = prevPlaylists.map((playlist) =>
             playlist.id === playlistId
               ? {
                   ...playlist,
-                  videos: playlist.videos.filter((video) => video.videoId !== videoToDelete.videoId),
+                  videos: playlist.videos.filter(
+                    (video) => video.videoId !== videoToDelete.videoId
+                  ),
                 }
               : playlist
-          )
-        );
+          );
+  
+          // Find the updated playlist
+          const updatedPlaylist = updatedPlaylists.find((p) => p.id === playlistId);
+  
+          // If the playlist is now empty, delete the playlist
+          if (updatedPlaylist && updatedPlaylist.videos.length === 0) {
+            deletePlaylist(playlistId);
+            return updatedPlaylists.filter((playlist) => playlist.id !== playlistId);
+          }
+  
+          return updatedPlaylists;
+        });
       } else {
         console.error('Failed to delete the video from the playlist');
       }
@@ -219,6 +224,24 @@ function App() {
       console.error('Error deleting video:', error);
     }
   };
+  
+  // Function to delete an empty playlist
+  const deletePlaylist = async (playlistId) => {
+    try {
+      const playlistDeleteUrl = `https://harbour.dev.is/api/playlists/${playlistId}`;
+  
+      const response = await fetch(playlistDeleteUrl, {
+        method: 'DELETE',
+      });
+  
+      if (!response.ok) {
+        console.error('Failed to delete the empty playlist');
+      }
+    } catch (error) {
+      console.error('Error deleting the playlist:', error);
+    }
+  };
+  
 
   useEffect(() => {
     fetchPlaylists();
@@ -251,7 +274,10 @@ function App() {
 
     <Playlist
       playlists={playlists}
-      onSelectVideo={setSelectedVideo}
+      onSelectVideo={(video) => {
+        console.log("Selected video from playlist:", video); // Debug
+        setSelectedVideo(video); // Ensure full video object is passed
+      }}
       onDeleteVideo={handleDeleteVideo} 
       onAddToPlaylist={handleAddToPlaylist}
     />

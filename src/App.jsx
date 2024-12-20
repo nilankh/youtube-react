@@ -275,10 +275,13 @@ function App() {
     <Playlist
       playlists={playlists}
       onSelectVideo={(video) => {
-        console.log("Selected video from playlist:", video); // Debug
-        setSelectedVideo(video); // Ensure full video object is passed
+        console.log("Selected video from playlist:", video); 
+        setSelectedVideo({
+          ...video,
+          id: video.videoId, // Map videoId to id
+        });
       }}
-      onDeleteVideo={handleDeleteVideo} 
+      onDeleteVideo={handleDeleteVideo}
       onAddToPlaylist={handleAddToPlaylist}
     />
 
